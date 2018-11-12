@@ -82,12 +82,16 @@ for line in test_data.itertuples():
     testing_matrix[user_dict[line[1].lower()], song_dict[line[2].lower()]] = line[3]
 
 # training_matrix = np.true_divide(training_matrix, training_matrix.sum(axis=1, keepdims=True))
+
+training_matrix=freq_percentile(training_matrix)
+''' testing freq_percentile, commenting below code --manish
 for i in range(training_matrix.shape[0]):
     row_sum = np.nansum(training_matrix[i])
     print("i: ", i, "sum: ", row_sum)
     print(training_matrix[i])
     if row_sum != 0:
-        training_matrix[i] = (training_matrix[i] / row_sum) * 100;
+        training_matrix[i] = (training_matrix[i] / row_sum) * 100
+'''
 # training_matrix = training_matrix_new
 print(np.argmax(training_matrix, axis=1))
 # testing_matrix = np.true_divide(testing_matrix, testing_matrix.sum(axis=1, keepdims=True))
