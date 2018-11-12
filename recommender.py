@@ -10,19 +10,24 @@ song_df_1 = pd.read_table("10000.txt", header=None)
 
 # song_df_2 = pd.read_csv(songs_metadata_file)
 
-print(song_df_1.head())
+print(song_df_1.shape)
+song_df_1 = song_df_1[:100]
+# for x,y,z in song_df_1:
+#     if z == 0:
 
+print(song_df_1.shape)
 n_u = len(song_df_1[0].unique())
 n_m = len(song_df_1[1].unique())
 
 sparsity = len(song_df_1)/(n_u*n_m)
 
-train_data, test_data = train_test_split(song_df_1, test_size=0.9)
+train_data, test_data = train_test_split(song_df_1, test_size=0.3)
 
 train_data = pd.DataFrame(train_data)
 test_data = pd.DataFrame(test_data)
 
-train_data[2] = (train_data[2] - train_data[2].mean()) / train_data[2].std()
+# normalizing the data
+# train_data[2] = (train_data[2] - train_data[2].mean()) / train_data[2].std()
 
 
 vectorizer = CountVectorizer()
@@ -35,15 +40,29 @@ song_dict = vectorizer1.vocabulary_
 
 # Creating training matrix
 training_matrix = np.zeros((n_u, n_m))
+print("----------------")
 for line in train_data.itertuples():
+    # if line[3] != 0:
+    print('user: ',user_dict[line[1].lower()], 'song:', song_dict[line[2].lower()], ' ', line[3])
     training_matrix[user_dict[line[1].lower()], song_dict[line[2].lower()]] = line[3]
 
 # Creating test matrix
-testing_matrix = np.zeros((n_u, n_m))
+testing_matrix = np.zeros((n_u, n_m), dtype=np.float64)
+training_matrix_new = np.zeros((n_u, n_m), dtype=np.float64)
 for line in test_data.itertuples():
     testing_matrix[user_dict[line[1].lower()], song_dict[line[2].lower()]] = line[3]
 
-print(training_matrix[0])
+# training_matrix = np.true_divide(training_matrix, training_matrix.sum(axis=1, keepdims=True))
+for i in range(training_matrix.shape[0]):
+    row_sum = np.nansum(training_matrix[i])
+    print("i: ", i, "sum: ", row_sum)
+    print(training_matrix[i])
+    if row_sum != 0:
+        training_matrix[i] = (training_matrix[i] / row_sum) * 100;
+# training_matrix = training_matrix_new
+print(np.argmax(training_matrix, axis=1))
+# testing_matrix = np.true_divide(testing_matrix, testing_matrix.sum(axis=1, keepdims=True))
+
 
 
 # Scoring Function: Root Mean Squared Error
@@ -70,10 +89,13 @@ for epoch in range(n_epochs):
     print("Epoch:", epoch)
     for u, i in zip(users, items):
         e = training_matrix[u, i] - np.dot(P[u, :], Q[i, :].T)  # Error for this observation
+        print(e)
         P[u, :] += gamma * (e * Q[i, :] - lmbda * P[u, :])  # Update this user's features
+        print("P: " , max(P[u]))
         Q[i, :] += gamma * (e * P[u, :] - lmbda * Q[i, :])  # Update this movie's features
+        print("Q: ", max(Q[i]))
     train_errors.append(rmse_score(training_matrix, Q, P))  # Training RMSE for this pass
-    # test_errors.append(rmse_score(testing_matrix, Q, P))  # Test RMSE for this pass
+    test_errors.append(rmse_score(testing_matrix, Q, P))  # Test RMSE for this pass
 
 output_matrix = np.dot(P, Q.T)
 print(output_matrix[0])
