@@ -3,6 +3,7 @@ from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.feature_extraction.text import CountVectorizer
+from scipy import stats
 
 # print(songs_summary.head()[['title', 'song_id']])
 
@@ -38,6 +39,34 @@ vectorizer1 = CountVectorizer()
 vectorizer1.fit_transform(song_df_1[1].unique())
 song_dict = vectorizer1.vocabulary_
 
+
+# takes training matrix and returns sparse matrix with song ratings of 0-4, using pencentiled frequency
+# currently takes time , might need to optimise or create matrix and save to file
+def freq_percentile(training_matrix):
+    sum_matrix=training_matrix.sum(axis=1)
+    for i in range(training_matrix.shape[0]):
+        if sum_matrix[i]!=0 :
+            training_matrix[i] = training_matrix[i] / sum_matrix[i]
+    percentile_matrix = np.zeros((training_matrix.shape[0], training_matrix.shape[1]))
+    for i in range(training_matrix.shape[0]):
+        temp1=training_matrix[i][np.nonzero(training_matrix[i])]
+        for j in range(training_matrix.shape[1]):
+
+            temp=training_matrix[i][j]
+            if training_matrix[i][j] !=0:
+                percentile__val=stats.percentileofscore(temp1,training_matrix[i][j])
+                if percentile__val>=75 and percentile__val<=100:
+                    percentile_matrix[i][j]= 3.0 + (percentile__val-75)/25
+                elif percentile__val>=50 and percentile__val<75:
+                    percentile_matrix[i][j]= 2.0 + (percentile__val-50)/25
+                elif percentile__val>=25 and percentile__val<50:
+                    percentile_matrix[i][j]= 1.0 + (percentile__val-0)/25
+                elif percentile__val>=0 and percentile__val<25:
+                    percentile_matrix[i][j]= 0.0 + (percentile__val-0)/25
+
+    return percentile_matrix
+
+
 # Creating training matrix
 training_matrix = np.zeros((n_u, n_m))
 print("----------------")
@@ -53,12 +82,16 @@ for line in test_data.itertuples():
     testing_matrix[user_dict[line[1].lower()], song_dict[line[2].lower()]] = line[3]
 
 # training_matrix = np.true_divide(training_matrix, training_matrix.sum(axis=1, keepdims=True))
+
+training_matrix=freq_percentile(training_matrix)
+''' testing freq_percentile, commenting below code --manish
 for i in range(training_matrix.shape[0]):
     row_sum = np.nansum(training_matrix[i])
     print("i: ", i, "sum: ", row_sum)
     print(training_matrix[i])
     if row_sum != 0:
-        training_matrix[i] = (training_matrix[i] / row_sum) * 100;
+        training_matrix[i] = (training_matrix[i] / row_sum) * 100
+'''
 # training_matrix = training_matrix_new
 print(np.argmax(training_matrix, axis=1))
 # testing_matrix = np.true_divide(testing_matrix, testing_matrix.sum(axis=1, keepdims=True))
