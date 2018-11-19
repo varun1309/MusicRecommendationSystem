@@ -75,18 +75,29 @@ for i in range (len(song_df_1)):
     last_user = song_df_1.iloc[i]['user_id']
 
 song_df = pandas.merge(song_df_1, song_df_2.drop_duplicates(['song_id']), on="song_id", how="left")
-song_df.drop(["title", "release"],1)
+song_df = song_df.drop(["title", "release"],1)
+song_df.to_pickle("./songs_data.pkl")
+print(song_df.columns)
+
+for col in song_df.select_dtypes(include=['object']).columns:
+    song_df[col] = song_df[col].astype('category')
+    
+# Encoding categorical features
+for col in song_df.select_dtypes(include=['category']).columns:
+    song_df[col] = song_df[col].cat.codes
+
 
 target = song_df.pop('listen_count')
 train_data, test_data, train_labels, test_labels = cross_validation.train_test_split(song_df, target, test_size = 0.3)
-
+del song_df
 
 model = xgb.XGBClassifier(learning_rate=0.1, max_depth=15, min_child_weight=5, n_estimators=250)
 model.fit(train_data, train_labels)
 
 predict_labels = model.predict(test_data)
+print(predict_labels)
 
-print(metrics.classification_report(test_labels, predict_labels))
+#print(metrics.classification_report(test_labels, predict_labels))
 #unique_users_count = len(song_df_1[0].unique())
 #unique_songs_count = len(song_df_1[1].unique())
 
